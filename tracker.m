@@ -1,6 +1,6 @@
 function [positions, rect_results, time] = tracker(video_path, img_files, pos, target_sz, ...
 	padding, kernel, lambda, output_sigma_factor, interp_factor, cell_size, ...
-	features, show_visualization, cnn_model)
+	features, ~, cnn_model)
 %TRACKER Kernelized/Dual Correlation Filter (KCF/DCF) tracking.
 %   This function implements the pipeline for tracking with the KCF (by
 %   choosing a non-linear kernel) and DCF (by choosing a linear kernel).
@@ -44,10 +44,10 @@ temp = load('w2crs');
 w2c = temp.w2crs;
 	%if the target is large, lower the resolution, we don't need that much
 	%detail
-	resize_image = 1; %(sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
+	resize_image = (sqrt(prod(target_sz)) >= 100);  %diagonal size >= threshold
 	if resize_image,
-		pos = floor(pos / 4);
-		target_sz = floor(target_sz / 4);
+		pos = floor(pos / 2);
+		target_sz = floor(target_sz / 2);
     end
 
 	%window size, taking padding into account
@@ -99,7 +99,7 @@ w2c = temp.w2crs;
 
         %Resize the Image - Can be Disabled
 		if resize_image,
-			im = imresize(im, 0.25);
+			im = imresize(im, 0.5);
         end
         tic();
 		if frame > 1,
@@ -113,7 +113,6 @@ w2c = temp.w2crs;
                         tmp_sz(1)/window_sz.lroi(2)/(window_sz.lroi(1)/window_sz.lroi(2)),0];
                 param0 = affparam2mat(param0); 
                 patch = uint8(warpimg(double(im), param0, window_sz.lroi));
-                tic();
                 zf = fft2(get_features(patch, features, cell_size, cos_window,w2c,0,cnn_model));
 
                 %calculate response of the classifier at all shifts
@@ -124,8 +123,7 @@ w2c = temp.w2crs;
                 %account the fact that, if the target doesn't move, the peak
                 %will appear at the top-left corner, not at the center (this is
                 %discussed in the paper). the responses wrap around cyclically.
-                toc()
-                [vert_delta,tmp, horiz_delta] = find(response_lroi == max(response_lroi(:)), 1);
+                [vert_delta,tmp, ~] = find(response_lroi == max(response_lroi(:)), 1);
 
                 szid = floor((tmp-1)/(size(cos_window.lroi,2)))+1;
 
@@ -161,7 +159,7 @@ w2c = temp.w2crs;
                 %account the fact that, if the target doesn't move, the peak
                 %will appear at the top-left corner, not at the center (this is
                 %discussed in the paper). the responses wrap around cyclically.
-                [vert_delta,tmp, horiz_delta] = find(response_sroi == max(response_sroi), 1);
+                [vert_delta,tmp, ~] = find(response_sroi == max(response_sroi), 1);
 
                 szid = floor((tmp-1)/(size(cos_window.sroi,2)))+1;
 
@@ -288,14 +286,14 @@ w2c = temp.w2crs;
         rect_results(frame,:)=box;
         
         %Display the results
-        figure(1); imshow(im);
-        rectangle('Position',box);
-        drawnow;
+%         figure(1); imshow(im);
+%         rectangle('Position',box);
+%         drawnow;
     end
 
 	if resize_image,
 		positions = positions * 2;
-        rect_results = rect_results*2;
+        rect_results = rect_results * 2;
 	end
 end
 

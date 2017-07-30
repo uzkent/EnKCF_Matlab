@@ -1,4 +1,4 @@
-function [img_files, pos, target_sz, ground_truth, video_path] = load_video_info(base_path, video)
+function [img_files, pos, target_sz, ground_truth, video_path] = load_video_info(base_path, video, seq, inFrame, lastFrame)
 %LOAD_VIDEO_INFO
 %   Loads all the relevant information for the video in the given path:
 %   the list of image files (cell array of strings), initial position
@@ -26,7 +26,7 @@ function [img_files, pos, target_sz, ground_truth, video_path] = load_video_info
 	video_path = [base_path video '/'];
 
 	%try to load ground truth from text file (Benchmark's format)
-	filename = [video_path 'bike1.txt'];
+	filename = ['/Users/buzkent/Downloads/UAV123/anno/UAV123/UAV123/' seq '.txt'];
 	f = fopen(filename);
 	assert(f ~= -1, ['No initial position or ground truth to load ("' filename '").'])
 	
@@ -49,7 +49,7 @@ function [img_files, pos, target_sz, ground_truth, video_path] = load_video_info
 		ground_truth = [];
 	else
 		%store positions instead of boxes
-		ground_truth = ground_truth(:,[2,1]) + ground_truth(:,[4,3]) / 2;
+		ground_truth(:,1:2) = ground_truth(:,[2,1]) + ground_truth(:,[4,3]) / 2;
 	end
 	
 	
@@ -58,10 +58,7 @@ function [img_files, pos, target_sz, ground_truth, video_path] = load_video_info
 	
 	%for these sequences, we must limit ourselves to a range of frames.
 	%for all others, we just load all png/jpg files in the folder.
-	frames = {'David', 300, 770;
-			  'Football1', 1, 74;
-			  'Freeman3', 1, 460;
-			  'Freeman4', 1, 283};
+	frames = {video, inFrame, lastFrame};
 	
 	idx = find(strcmpi(video, frames(:,1)));
 	
@@ -75,11 +72,11 @@ function [img_files, pos, target_sz, ground_truth, video_path] = load_video_info
 		img_files = sort({img_files.name});
 	else
 		%list specified frames. try png first, then jpg.
-		if exist(sprintf('%s%04i.png', video_path, frames{idx,2}), 'file'),
-			img_files = num2str((frames{idx,2} : frames{idx,3})', '%04i.png');
+		if exist(sprintf('%s%06i.png', video_path, frames{idx,2}), 'file'),
+			img_files = num2str((frames{idx,2} : frames{idx,3})', '%06i.png');
 			
-		elseif exist(sprintf('%s%04i.jpg', video_path, frames{idx,2}), 'file'),
-			img_files = num2str((frames{idx,2} : frames{idx,3})', '%04i.jpg');
+		elseif exist(sprintf('%s%06i.jpg', video_path, frames{idx,2}), 'file'),
+			img_files = num2str((frames{idx,2} : frames{idx,3})', '%06i.jpg');
 			
 		else
 			error('No image files to load.')

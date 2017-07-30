@@ -1,4 +1,4 @@
-function precisions = precision_plot(positions, ground_truth, title, show)
+function [precisions, success] = precision_plot(positions, rect_results, ground_truth, title, show)
 %PRECISION_PLOT
 %   Calculates precision for a series of distance thresholds (percentage of
 %   frames where the distance to the ground truth is within the threshold).
@@ -12,9 +12,9 @@ function precisions = precision_plot(positions, ground_truth, title, show)
 
 	
 	max_threshold = 50;  %used for graphs in the paper
-	
-	
-	precisions = zeros(max_threshold, 1);
+	max_threshold_success = 100;
+	precisions = zeros(max_threshold, 1); %Initiate Precisions
+	success = zeros(max_threshold_success, 1); %Initiate Precisions    
 	
 	if size(positions,1) ~= size(ground_truth,1),
 % 		fprintf('%12s - Number of ground truth frames does not match number of tracked frames.\n', title)
@@ -33,8 +33,18 @@ function precisions = precision_plot(positions, ground_truth, title, show)
 	%compute precisions
 	for p = 1:max_threshold,
 		precisions(p) = nnz(distances <= p) / numel(distances);
-	end
+    end
+    
+    for i = 1:size(ground_truth,1)
+        intersectionArea = rectint(rect_results(i,:),ground_truth(i,:));
+        unionArea = (rect_results(i,3)*rect_results(i,4))+(rect_results(i,3)*rect_results(i,4))-intersectionArea;
+        iou(i) = 100*intersectionArea/unionArea;
+    end
 	
+    for s = 1:max_threshold_success,
+		success(s) = nnz(iou >= s) / numel(iou);
+    end
+    
 	%plot the precisions
 	if show == 1,
 		figure('Number','off', 'Name',['Precisions - ' title])

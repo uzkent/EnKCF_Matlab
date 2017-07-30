@@ -6,7 +6,7 @@ addpath('~/Documents/caffe/matlab');
 d = load('~/Documents/caffe/matlab/+caffe/imagenet/ilsvrc_2012_mean.mat');
 mean_data = d.mean_data;
 IMAGE_DIM = 256;
-CROPPED_DIM = 227;
+CROPPED_DIM = 224;
 
 % Convert an image returned by Matlab's imread to im_data in caffe's data
 % format: W x H x C with BGR channels
