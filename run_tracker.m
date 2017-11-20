@@ -1,4 +1,3 @@
-
 %
 %  High-Speed Tracking with Kernelized Correlation Filters
 %
@@ -39,10 +38,7 @@
 %   revised by: Yang Li, August, 2014
 %   http://ihpdep.github.io
 
-function [precision, fps] = run_tracker(video, kernel_type, feature_type, show_visualization, show_plots)
-
-	%path to the videos (you'll be able to choose one with the GUI).
-	base_path ='.\data';
+function [precision, success] = run_tracker(video, kernel_type, ~, show_visualization, ~)
 
 	%default settings
 	if nargin < 1, video = 'choose'; end
@@ -65,25 +61,27 @@ function [precision, fps] = run_tracker(video, kernel_type, feature_type, show_v
     features.deep = true;
 	cell_size = 4;
         
-    model = '/Users/buzkent/Documents/caffe/models/bvlc_reference_caffenet/deploy_conv2.prototxt';
-    weights = '/Users/buzkent/Documents/caffe/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel';
-    cnn_model = caffe.Net(model, weights, 'test'); % create net and load weights
+    %model_trans = '/Volumes/Burak_HardDrive/Moving_Platform_CNN_Training/VGG16/deploy_trans.prototxt';
+    %model_scale = '/Volumes/Burak_HardDrive/Moving_Platform_CNN_Training/VGG16/deploy_scale.prototxt';
+    %weights = '/Volumes/Burak_HardDrive/Moving_Platform_CNN_Training/VGG16/VGG_ILSVRC_16_layers.caffemodel';
+    %cnn_model.trans = caffe.Net(model_trans, weights, 'test'); % create net and load weights
+    %cnn_model.scale = caffe.Net(model_scale, weights, 'test'); % create net and load weights
 	
-    padding.sroi = 2.5;  %Padding for the Small Area Translation Filter
-	lambda = 1e-4;  %regularization
-	output_sigma_factor.sroi = 0.1;  %spatial bandwidth (proportional to target)
+    padding.sroi = 1.5;  %Padding for the Small Area Translation Filter
+	lambda = 1e-4;       %regularization
+	output_sigma_factor.sroi = 0.12;  %spatial bandwidth (proportional to target)
 	interp_factor.sroi = 0.020;  %linear interpolation factor for adaptation
 	kernel.sroi_sigma = 0.6;  %gaussian kernel bandwidth
 
-    padding.lroi = 3.0; %Padding for the Large Area Translation Filter
-    output_sigma_factor.lroi = 0.1; %spatial bandwith for the Large ROI TF
-    interp_factor.lroi = 0.020;  %linear interpolation factor for adaptation    
-	kernel.lroi_sigma = 0.6;  %gaussian kernel bandwidth
+    padding.lroi = 2.0; %Padding for the Large Area Translation Filter
+    output_sigma_factor.lroi = 0.12; %spatial bandwith for the Large ROI TF
+    interp_factor.lroi = 0.012;  %linear interpolation factor for adaptation    
+	kernel.lroi_sigma = 0.7;  %gaussian kernel bandwidth
 
-    padding.scale = 1.0; %Padding for the Scale filter
-    output_sigma_factor.scale = 0.1; %spatial bandwith for the Large ROI TF
-    interp_factor.scale = 0.020;  %linear interpolation factor for adaptation    
-	kernel.scale_sigma = 0.6;  %gaussian kernel bandwidth
+    padding.scale = 0.00; %Padding for the Scale filter
+    output_sigma_factor.scale = 0.08; %spatial bandwith for the Large ROI TF
+    interp_factor.scale = 0.012;  %linear interpolation factor for adaptation    
+	kernel.scale_sigma = 0.7;  %gaussian kernel bandwidth
     
 	assert(any(strcmp(kernel_type, {'linear', 'polynomial', 'gaussian'})), 'Unknown kernel.')
 		
@@ -91,23 +89,26 @@ function [precision, fps] = run_tracker(video, kernel_type, feature_type, show_v
 
     %get image file names, initial state, and ground truth for evaluation
     base_path = '/Users/buzkent/Downloads/UAV123/data_seq/UAV123/';
-    video = 'bike1';
-    [img_files, pos, target_sz, ground_truth, video_path] = load_video_info(base_path, video);
+    fid   = fopen('/Users/buzkent/Downloads/UAV123/startFrames_UAV123.txt');
+    seqInfo = textscan(fid, '%d%d%s%s\n');
+    for i = 1:size(seqInfo{1},1)
+        video = seqInfo{4}{i};
+        seq = seqInfo{3}{i};
+        firstFrame = seqInfo{1}(i);
+        lastFrame = seqInfo{2}(i);
+        try
+            [img_files, pos, target_sz, ground_truth, video_path] = load_video_info(base_path, video, seq, firstFrame, lastFrame);
 
-    %call tracker function with all the relevant parameters
-    [positions,~, time] = tracker(video_path, img_files, pos, target_sz, ...
-        padding, kernel, lambda, output_sigma_factor, interp_factor, ...
-        cell_size, features, show_visualization,cnn_model);
-
-    %calculate and show precision plot, as well as frames-per-second
-    precisions = precision_plot(positions, ground_truth, video, show_plots);
-    fps = numel(img_files) / time;
-
-    fprintf('%12s - Precision (20px):% 1.3f, FPS:% 4.2f\n', video, precisions(20), fps)
-
-    if nargout > 0,
-        %return precisions at a 20 pixels threshold
-        precision = precisions(20);
+            %call tracker function with all the relevant parameters
+            [positions,rect_results, ~] = tracker(video_path, img_files, pos, target_sz, ...
+                padding, kernel, lambda, output_sigma_factor, interp_factor, ...
+                cell_size, features, show_visualization,[]);
+            i
+            %calculate and show precision plot, as well as frames-per-second
+            [precision(i,:),success(i,:)] = precision_plot(positions, rect_results,ground_truth, video, 0);
+        catch err
+           continue;
+        end
     end
-
+    save results2.mat precision success;
 end

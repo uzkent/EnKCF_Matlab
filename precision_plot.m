@@ -34,7 +34,8 @@ function [precisions, success] = precision_plot(positions, rect_results, ground_
 	for p = 1:max_threshold,
 		precisions(p) = nnz(distances <= p) / numel(distances);
     end
-    
+    %Compute Success Overlap
+    rect_results(:,1:2) = positions(:,1:2);
     for i = 1:size(ground_truth,1)
         intersectionArea = rectint(rect_results(i,:),ground_truth(i,:));
         unionArea = (rect_results(i,3)*rect_results(i,4))+(rect_results(i,3)*rect_results(i,4))-intersectionArea;
