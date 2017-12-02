@@ -37,6 +37,9 @@ function [precisions, success] = precision_plot(positions, rect_results, ground_
     %Compute Success Overlap
     rect_results(:,1:2) = positions(:,1:2);
     for i = 1:size(ground_truth,1)
+        if isnan(ground_truth(i,1))% Handle NaN Ground Truth
+            continue
+        end
         intersectionArea = rectint(rect_results(i,:),ground_truth(i,:));
         unionArea = (rect_results(i,3)*rect_results(i,4))+(rect_results(i,3)*rect_results(i,4))-intersectionArea;
         iou(i) = 100*intersectionArea/unionArea;
@@ -45,13 +48,6 @@ function [precisions, success] = precision_plot(positions, rect_results, ground_
     for s = 1:max_threshold_success,
 		success(s) = nnz(iou >= s) / numel(iou);
     end
-    
-	%plot the precisions
-	if show == 1,
-		figure('Number','off', 'Name',['Precisions - ' title])
-		plot(precisions, 'k-', 'LineWidth',2)
-		xlabel('Threshold'), ylabel('Precision')
-	end
 	
 end
 
