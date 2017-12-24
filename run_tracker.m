@@ -73,10 +73,10 @@ function [precision, success] = run_tracker(video, kernel_type, ~, show_visualiz
 	interp_factor.sroi = 0.020;  %linear interpolation factor for adaptation
 	kernel.sroi_sigma = 0.6;  %gaussian kernel bandwidth
 
-    padding.lroi = 2.0; %Padding for the Large Area Translation Filter
-    output_sigma_factor.lroi = 0.12; %spatial bandwith for the Large ROI TF
-    interp_factor.lroi = 0.020;  %linear interpolation factor for adaptation    
-	kernel.lroi_sigma = 0.7;  %gaussian kernel bandwidth
+    padding.lroi = 1.50; %Padding for the Large Area Translation Filter
+    output_sigma_factor.lroi = 0.1; %spatial bandwith for the Large ROI TF
+    interp_factor.lroi = 0.02;  %linear interpolation factor for adaptation    
+	kernel.lroi_sigma = 0.5;  %gaussian kernel bandwidth
 
     padding.scale = 0.00; %Padding for the Scale filter
     output_sigma_factor.scale = 0.08; %spatial bandwith for the Large ROI TF
