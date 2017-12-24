@@ -49,42 +49,9 @@ w2c = temp.w2crs;
 		pos = floor(pos / 2);
 		target_sz = floor(target_sz / 2);
     end
-
-    % mod factor for running the ensemble of filters
-    mod_divisor = 5;
-    % Scale Confidence for the Candidates other than 1
-    scale_confidence = 0.95;
-	%window size, taking padding into account
-    if target_sz(1) > target_sz(2)
-        window_sz.sroi(1) = 96;
-        window_sz.lroi(1) = 96;
-        window_sz.scale(1) = 64;
-        window_sz.sroi(2) = round(96/target_sz(1) * target_sz(2));
-        window_sz.lroi(2) = round(96/target_sz(1) * target_sz(2));
-        window_sz.scale(2) = round(64/target_sz(1) * target_sz(2));
-    else
-        window_sz.sroi(2) = 96;
-        window_sz.lroi(2) = 96;
-        window_sz.scale(2) = 64;
-        window_sz.sroi(1) = round(96/target_sz(2) * target_sz(1));
-        window_sz.lroi(1) = round(96/target_sz(2) * target_sz(1));
-        window_sz.scale(1) = round(64/target_sz(2) * target_sz(1));
-    end
     
     % window size, taking padding into account
-	window_sz.sroi = floor(target_sz * (1 + padding.sroi));
 	window_sz.lroi = floor(target_sz * (1 + padding.lroi));
-	window_sz.scale = floor(target_sz * (1 + padding.scale));
-    
-    %Small ROI Translation Filter
-	%create regression labels, gaussian shaped, with a bandwidth
-	%proportional to target size
-	output_sigma.sroi = sqrt(prod(target_sz)) * output_sigma_factor.sroi / cell_size;
-	yf.sroi = fft2(gaussian_shaped_labels(output_sigma.sroi, ...
-        floor(window_sz.sroi / cell_size)));
-
-	%store pre-computed cosine window
-	cos_window.sroi = hann_window(size(yf.sroi,1))' * hann_window(size(yf.sroi,2));
     
     %Large ROI Translation Filter
     %create regression labels, gaussian shaped, with a bandwidth
@@ -96,22 +63,7 @@ w2c = temp.w2crs;
 
 	%store pre-computed cosine window
 	cos_window.lroi = hann_window(size(yf.lroi,1))' * hann_window(size(yf.lroi,2));
-    
-    %Scale Filter
-    %create regression labels, gaussian shaped, with a bandwidth
-	%proportional to target size
-	output_sigma.scale = sqrt(prod(target_sz)) * output_sigma_factor.scale ...
-        / cell_size;
-	yf.scale = fft2(gaussian_shaped_labels(output_sigma.scale, ...
-        floor(window_sz.scale / cell_size)));
-
-	%store pre-computed cosine window
-	cos_window.scale = hann_window(size(yf.scale,1))' * hann_window(size(yf.scale,2));
-	
-	search_size = [1  1.05 1.00/1.05]; % Scale Space
-
-	%note: variables ending with 'f' are in the Fourier domain.
-
+   
 	time = 0;  %to calculate FPS
 	positions = zeros(numel(img_files), 2);  %to calculate precision
 	rect_results = zeros(numel(img_files), 4);  %to calculate 
@@ -123,7 +75,6 @@ w2c = temp.w2crs;
         end
         %Resize the Image - Can be Disabled
         tic();
-        szid = 1;
 		if frame > 1
             %% TRANSLATION ESTIMATION
             %obtain a subwindow for detection at the position from last
@@ -131,7 +82,6 @@ w2c = temp.w2crs;
             %patch = get_subwindow(im, pos, window_sz);
             tmp_sz = floor(target_sz * (1 + padding.lroi));
             patch = get_subwindow(im, pos, tmp_sz);
-            patch = im_resize(patch, window_sz.lroi);
             zf = fft2(get_features(patch, features, cell_size, ...
                 cos_window,w2c, 0, []));
 
@@ -155,9 +105,7 @@ w2c = temp.w2crs;
                 horiz_delta = horiz_delta - size(zf,2);
             end
             % Translation Update                
-            tmp_sz = floor(target_sz * (1 + padding.lroi));
-            scale_ratio = tmp_sz(2) / window_sz.lroi(2);
-            pos = pos + scale_ratio*cell_size * [vert_delta - 1, horiz_delta - 1];
+			pos = pos + cell_size * [vert_delta - 1, horiz_delta - 1];
            
         end
 
@@ -165,7 +113,6 @@ w2c = temp.w2crs;
         % Update Large ROI Trans.
         tmp_sz = floor(target_sz * (1 + padding.lroi));
         patch = get_subwindow(im,pos, tmp_sz);
-        patch = im_resize(patch, window_sz.lroi);            
         xf.lroi = fft2(get_features(patch, features, cell_size,...
             cos_window,w2c,0,[]));
 
@@ -173,7 +120,6 @@ w2c = temp.w2crs;
         kf = gaussian_correlation(xf.lroi, xf.lroi, kernel.lroi_sigma);
 
         alphaf.lroi = yf.lroi ./ (kf + lambda);   %equation for fast training
-        flag = 0;
    
 		if frame == 1  %first frame, train with a single image
 			model_alphaf.lroi = alphaf.lroi;
@@ -193,9 +139,9 @@ w2c = temp.w2crs;
         rect_results(frame,:) = box;
         
 %         %Display the results
-%         figure(1); imshow(im);
-%         rectangle('Position',box);
-%         drawnow;
+        figure(1); imshow(im);
+        rectangle('Position',box);
+        drawnow;
     end
 
 	if resize_image % Scale the new bounding box
