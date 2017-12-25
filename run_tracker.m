@@ -73,14 +73,14 @@ function [precision, success] = run_tracker(video, kernel_type, ~, show_visualiz
 	interp_factor.sroi = 0.020;  %linear interpolation factor for adaptation
 	kernel.sroi_sigma = 0.6;  %gaussian kernel bandwidth
 
-    padding.lroi = 1.50; %Padding for the Large Area Translation Filter
-    output_sigma_factor.lroi = 0.1; %spatial bandwith for the Large ROI TF
-    interp_factor.lroi = 0.02;  %linear interpolation factor for adaptation    
-	kernel.lroi_sigma = 0.5;  %gaussian kernel bandwidth
+    padding.lroi = 2.0; %Padding for the Large Area Translation Filter
+    output_sigma_factor.lroi = 0.12; %spatial bandwith for the Large ROI TF
+    interp_factor.lroi = 0.012;  %linear interpolation factor for adaptation    
+	kernel.lroi_sigma = 0.7;  %gaussian kernel bandwidth
 
     padding.scale = 0.00; %Padding for the Scale filter
     output_sigma_factor.scale = 0.08; %spatial bandwith for the Large ROI TF
-    interp_factor.scale = 0.020;  %linear interpolation factor for adaptation    
+    interp_factor.scale = 0.012;  %linear interpolation factor for adaptation    
 	kernel.scale_sigma = 0.7;  %gaussian kernel bandwidth
     
 	assert(any(strcmp(kernel_type, {'linear', 'polynomial', 'gaussian'})), 'Unknown kernel.')
@@ -100,17 +100,16 @@ function [precision, success] = run_tracker(video, kernel_type, ~, show_visualiz
             [img_files, pos, target_sz, ground_truth, video_path] = load_video_info(base_path, video, seq, firstFrame, lastFrame);
 
             %call tracker function with all the relevant parameters
-            [positions, rect_results, fps] = tracker(video_path, img_files, pos, target_sz, ...
+            [positions,rect_results, fps(counter)] = tracker(video_path, img_files, pos, target_sz, ...
                 padding, kernel, lambda, output_sigma_factor, interp_factor, ...
                 cell_size, features, show_visualization,[]);
             i
             %calculate and show precision plot, as well as frames-per-second
-            [precision(i,:),success(i,:)] = precision_plot(positions, rect_results, ground_truth, video, 0);
-            mean(precision)
-            mean(success)
-            fps_all(i) = mean(fps);
-            mean(fps_all)
+            [precision(counter,:),success(counter,:)] = precision_plot(positions, rect_results,ground_truth, video, 0);
+            counter = counter + 1;
+
         catch err
+           err
            continue;
         end
     end
