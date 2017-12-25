@@ -1,4 +1,4 @@
-function [positions, rect_results, time] = tracker(video_path, img_files, pos, target_sz, ...
+function [positions, rect_results, fps] = tracker(video_path, img_files, pos, target_sz, ...
 	padding, kernel, lambda, output_sigma_factor, interp_factor, cell_size, ...
 	features, ~, ~)
 %TRACKER Kernelized/Dual Correlation Filter (KCF/DCF) tracking.
@@ -72,9 +72,9 @@ w2c = temp.w2crs;
     end
     
     % window size, taking padding into account
-	%window_sz.sroi = floor(target_sz * (1 + padding.sroi));
-	%window_sz.lroi = floor(target_sz * (1 + padding.lroi));
-	%window_sz.scale = floor(target_sz * (1 + padding.scale));
+	window_sz.sroi = floor(target_sz * (1 + padding.sroi));
+	window_sz.lroi = floor(target_sz * (1 + padding.lroi));
+	window_sz.scale = floor(target_sz * (1 + padding.scale));
     
     %Small ROI Translation Filter
 	%create regression labels, gaussian shaped, with a bandwidth
@@ -295,8 +295,8 @@ w2c = temp.w2crs;
 
 		%save position and timing
 		positions(frame,:) = pos;
-        time = time + toc();
-        1.0 / (time / frame)
+        fps_all(frame) = toc();
+        fps = mean(fps_all);
 		box = [pos([2,1]) - target_sz([2,1])/2, target_sz([2,1])];
         rect_results(frame,:) = box;
         

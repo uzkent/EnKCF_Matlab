@@ -100,13 +100,16 @@ function [precision, success] = run_tracker(video, kernel_type, ~, show_visualiz
             [img_files, pos, target_sz, ground_truth, video_path] = load_video_info(base_path, video, seq, firstFrame, lastFrame);
 
             %call tracker function with all the relevant parameters
-            [positions,rect_results, ~] = tracker(video_path, img_files, pos, target_sz, ...
+            [positions,rect_results, fps(counter)] = tracker(video_path, img_files, pos, target_sz, ...
                 padding, kernel, lambda, output_sigma_factor, interp_factor, ...
                 cell_size, features, show_visualization,[]);
             i
             %calculate and show precision plot, as well as frames-per-second
-            [precision(i,:),success(i,:)] = precision_plot(positions, rect_results,ground_truth, video, 0);
+            [precision(counter,:),success(counter,:)] = precision_plot(positions, rect_results,ground_truth, video, 0);
+            counter = counter + 1;
+
         catch err
+           err
            continue;
         end
     end
