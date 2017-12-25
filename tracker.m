@@ -84,7 +84,7 @@ w2c = temp.w2crs;
         floor(window_sz.sroi / cell_size)));
 
 	%store pre-computed cosine window
-	cos_window.sroi = hann(size(yf.sroi,1)) * hann(size(yf.sroi,2))';
+	cos_window.sroi = hann_window(size(yf.sroi,1))' * hann_window(size(yf.sroi,2));
     
     %Large ROI Translation Filter
     %create regression labels, gaussian shaped, with a bandwidth
@@ -95,7 +95,7 @@ w2c = temp.w2crs;
         floor(window_sz.lroi / cell_size)));
 
 	%store pre-computed cosine window
-	cos_window.lroi = hann(size(yf.lroi,1)) * hann(size(yf.lroi,2))';
+	cos_window.lroi = hann_window(size(yf.lroi,1))' * hann_window(size(yf.lroi,2));
     
     %Scale Filter
     %create regression labels, gaussian shaped, with a bandwidth
@@ -106,7 +106,7 @@ w2c = temp.w2crs;
         floor(window_sz.scale / cell_size)));
 
 	%store pre-computed cosine window
-	cos_window.scale = hann(size(yf.scale,1)) * hann(size(yf.scale,2))';
+	cos_window.scale = hann_window(size(yf.scale,1))' * hann_window(size(yf.scale,2));
 	
 	search_size = [1  1.05 1.00/1.05]; % Scale Space
 
@@ -119,7 +119,7 @@ w2c = temp.w2crs;
 		%load image
 		im = imread([video_path img_files{frame}]);
     	if resize_image
-            im = imresize(im,0.5); % Downsample image
+            im = im_resize(im,round(size(im)/2)); % Downsample image
         end
         %Resize the Image - Can be Disabled
         tic();
@@ -132,7 +132,7 @@ w2c = temp.w2crs;
                 %patch = get_subwindow(im, pos, window_sz);
                 tmp_sz = floor(target_sz * (1 + padding.lroi));
                 patch = get_subwindow(im, pos, tmp_sz);
-                patch = imresize(patch, window_sz.lroi);
+                patch = im_resize(patch, window_sz.lroi);
                 zf = fft2(get_features(patch, features, cell_size, ...
                     cos_window,w2c, 0, []));
 
@@ -165,7 +165,7 @@ w2c = temp.w2crs;
                 %frame, and convert to Fourier domain (its size is unchanged)
                 tmp_sz = floor(target_sz * (1 + padding.sroi));
                 patch = get_subwindow(im,pos,tmp_sz);
-                patch = imresize(patch,window_sz.sroi);
+                patch = im_resize(patch,window_sz.sroi);
                 zf = fft2(get_features(patch, features, cell_size, cos_window,w2c,2,[]));
 
                 %calculate response of the classifier at all shifts
@@ -199,7 +199,7 @@ w2c = temp.w2crs;
                 for i=1:size(search_size,2)
                     tmp_sz = floor(target_sz * (1 + padding.scale) * search_size(i));
                     patch = get_subwindow(im, pos, tmp_sz);
-                    patch = imresize(patch, window_sz.scale);
+                    patch = im_resize(patch, window_sz.scale);
                     zf = fft2(get_features(patch, features, cell_size,... 
                     cos_window,w2c,1,[]));
 
@@ -222,7 +222,7 @@ w2c = temp.w2crs;
         if ((mod(frame, mod_divisor) > 0 && mod(frame, mod_divisor) < 3) || (frame == 1))
             tmp_sz = floor(target_sz * (1 + padding.lroi));
             patch = get_subwindow(im,pos, tmp_sz);
-            patch = imresize(patch, window_sz.lroi);            
+            patch = im_resize(patch, window_sz.lroi);            
             xf.lroi = fft2(get_features(patch, features, cell_size,...
                 cos_window,w2c,0,[]));
 
@@ -237,7 +237,7 @@ w2c = temp.w2crs;
         if (mod(frame, mod_divisor) == 3 || mod(frame, mod_divisor) == 4 || frame == 1)
             tmp_sz = floor(target_sz * (1 + padding.sroi));
             patch = get_subwindow(im, pos, tmp_sz);
-            patch = imresize(patch, window_sz.sroi);            
+            patch = im_resize(patch, window_sz.sroi);            
             xf.sroi = fft2(get_features(patch, features, cell_size,...
                 cos_window, w2c, 2, []));
 
@@ -251,7 +251,7 @@ w2c = temp.w2crs;
         if (mod(frame, mod_divisor) == 0 || frame == 1)
             tmp_sz = floor(target_sz * (1 + padding.scale));
             patch = get_subwindow(im, pos, tmp_sz);
-            patch = imresize(patch, window_sz.scale);
+            patch = im_resize(patch, window_sz.scale);
             xf.scale = fft2(get_features(patch, features, cell_size,...
                 cos_window, w2c, 1, []));
 
